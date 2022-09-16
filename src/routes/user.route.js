@@ -4,7 +4,7 @@ const userService = require("../services/user.service");
 const router = express.Router();
 
 
-router.get("/",
+router.get("/authenticate",
     userService.getUserByEmailAndPassword
 );
 

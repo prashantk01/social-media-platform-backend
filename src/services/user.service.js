@@ -19,23 +19,29 @@ exports.getUserById = (req, res) => {
 exports.getUserByEmailAndPassword = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 8)
+        if (!email || !password)
+            res.status(500).json("please provide email and password correctly")
+
         const user = await User.findOne({
-            email,
-            hashedPassword
+            email: email,
         })
-        if (!user) {
+        if (!user || !await bcrypt.compare(password, user.password)) {
             res.status(404).json({
-                data: "User not found"
+                data: "User not found or Incorrect Password"
             })
         }
-        return res.status(200).json({
-            data: user,
-            status: "Success"
-        });
+        else {
+            const token = await user.generateAuthToken()
+            res.status(200).json({
+                data: {
+                    token: token
+                },
+                status: "Success",
+            });
+        }
     }
-    catch (e) {
-        res.status(400).json(e);
+    catch (err) {
+        res.status(400).json(err);
     }
 }
 
