@@ -1,8 +1,8 @@
 const express = require('express')
-const app = express()
+require('./mongodb/mongoose')
 require('dotenv').config()
-const PORT=process.env.PORT
 
-app.listen(PORT, () => {
-    console.log(`server is up and running at port: ${PORT}`)
-})
+const app = express()
+
+app.use(express.json())
+module.exports = app

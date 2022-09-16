@@ -1,3 +1,6 @@
 # social-media-platform-backend
-  # Back End Assignment - Full Time
-  A backend project for a social media platform APIs in NodeJS and database schema and implementation is in MongoDB.
+  ## Back End Assignment - Full Time
+  ### Problem Statement
+  - Build APIs for a social media platform in either NodeJS or Python
+  - The API should support features like getting a user profile, follow a user, upload a post, delete a post,  like a post, unlike a liked post, and comment on a post
+  - Design the database schema and implement in PostgreSQL or MongoDB
