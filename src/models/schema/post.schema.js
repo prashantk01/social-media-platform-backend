@@ -23,20 +23,20 @@ const post = new mongoose.Schema({
     likedBy: [
         {
             type: mongoose.Types.ObjectId,
-            ref : "User"
+            ref: "User"
         }
     ],
-    comments:[ {
-        text: {
+    comments: [{
+        commentText: {
             type: String
         },
         commentedBy: {
-             type: mongoose.Schema.Types.ObjectId,
-             ref: "User"
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
         },
         commentedAt: {
             type: Date,
-            default : Date.now()
+            default: Date.now()
         }
 
     }],
