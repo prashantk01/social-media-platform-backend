@@ -46,3 +46,7 @@
   - git clone <"project-link">
   - npm i
   - npm run dev
+
+
+  ### Heroku deployed link for this project
+  -  https://social-media-platform-backend.herokuapp.com/
