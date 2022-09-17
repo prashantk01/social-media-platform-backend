@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs')
 const User = require('../models/schema/user.schema');
+const { sendWelcomeEmail, sendCancelationEmail } = require('../config/emails/email')
 
 exports.getUserById = (req, res) => {
     User.findById(req.user._id)
@@ -25,6 +26,7 @@ exports.getUserByEmailAndPassword = async (req, res) => {
         const user = await User.findOne({
             email: email,
         })
+        sendWelcomeEmail(user.email, user.name)
         if (!user || !await bcrypt.compare(password, user.password)) {
             res.status(404).json({
                 data: "User not found or Incorrect Password"
