@@ -45,74 +45,101 @@ exports.getUserByEmailAndPassword = async (req, res) => {
     }
 }
 
-exports.follow = (req, res, next) => {
-    if (req.params.id == req.user._id) {
-        res.status(400).json({
+exports.follow = async (req, res) => {
+    if (req.params.id === req.user._id) {
+        res.status(400).send({
             status: 'success',
-            data: 'You cannot follow yourself..'
+            data: 'You cannot follow yourself !!'
         });
-
         return;
     }
-
-    User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $push: { followingTo: req.params.id },
-            $inc: { 'followingCount': 1 }
-        },
-        { new: true, omitUndefined: true })
-        .then(result => next())
-        .catch(err => res.status(400).json(err));
-
-    User.findByIdAndUpdate(
-        req.params.id,
-        {
-            $push: { followedBy: req.user._id },
-            $inc: { 'followersCount': 1 }
-        },
-        { new: true, omitUndefined: true })
-        .populate('followedBy', '_id name')
-        .populate('followingTo', '_id name')
-        .then(result => res.status(200).json({
-            status: 'success',
-            data: {
-                data: result
+    try {
+        const currentUser = await User.findById(req.user._id);
+        const goingToFollowUser = await User.findById(req.params.id)
+        if (!currentUser || !goingToFollowUser) {
+            throw new Error("User(s) not found");
+        }
+        if (!currentUser.followingTo)
+            currentUser.followingTo = []
+        currentUser.followingTo.push(goingToFollowUser._id);
+        currentUser.followingCount += 1;
+        const updatedCurrentUser = await User.findByIdAndUpdate(
+            currentUser._id,
+            {
+                ...currentUser,
+            },
+            {
+                new: true, omitUndefined: true
             }
-        }))
-        .catch(err => res.status(400).json(err));
+        );
+        goingToFollowUser.followedBy.push(currentUser._id);
+        goingToFollowUser.followersCount += 1
+        await User.findByIdAndUpdate(
+            goingToFollowUser._id,
+            {
+                ...goingToFollowUser,
+            },
+            {
+                new: true, omitUndefined: true
+            }
+        );
+        res.status(200).json({
+            data: {
+                name: updatedCurrentUser.name,
+                followersCount: updatedCurrentUser.followersCount,
+                followingCount: updatedCurrentUser.followingCount
+            }
 
+        })
+    } catch (err) {
+        res.status(500).json({
+            data: err
+        })
+    }
 };
 
 
-exports.unfollow = (req, res) => {
+exports.unfollow = async (req, res) => {
     if (req.params.id == req.user._id) {
-        res.status(400).json({
+        res.status(400).send({
             status: 'success',
-            data: 'You cannot unfollow yourself..'
+            data: 'You cannot unfollow yourself !!'
         });
-
         return;
     }
+    const currentUser = await User.findById(req.user._id);
+    const goingToUnFollowUser = await User.findById(req.params.id)
+    if (!currentUser || !goingToUnFollowUser) {
+        throw new Error("User(s) not found");
+    }
+    try {
+        const updatedCurrentUser = await User.findByIdAndUpdate(currentUser._id,
+            {
+                $pull: { followingTo: goingToUnFollowUser._id },
+                $inc: { 'followingCount': -1 }
+            },
+            { new: true, omitUndefined: true })
 
-    User.findByIdAndUpdate(req.user._id,
-        {
-            $pull: { followingTo: req.params.id },
-            $inc: { 'followingCount': -1 }
-        },
-        { new: true, omitUndefined: true })
-        .then(result => next())
-        .catch(err => res.status(400).json(err));
+        await User.findByIdAndUpdate(
+            goingToUnFollowUser._id,
+            {
+                $pull: { followedBy: currentUser._id },
+                $inc: { 'followersCount': -1 }
+            },
+            { new: true, omitUndefined: true })
 
-    User.findByIdAndUpdate(
-        req.params.id,
-        {
-            $pull: { followedBy: req.user._id },
-            $inc: { 'followersCount': -1 }
-        },
-        { new: true, omitUndefined: true })
-        .populate('following', '_id name')
-        .populate('followers', '_id name')
-        .then(result => res.status(200).json(result))
-        .catch(err => res.status(400).json(err));
+        res.status(200).json({
+            data: {
+                name: updatedCurrentUser.name,
+                followersCount: updatedCurrentUser.followersCount,
+                followingCount: updatedCurrentUser.followingCount
+            }
+
+        })
+
+    } catch (err) {
+        res.
+            status(500).
+            send({ data: err })
+    }
 };

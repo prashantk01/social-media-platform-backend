@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema({
     followersCount: {
         type: Number,
         default: 0,
-        min: 0
+        min: [0, "Minimum followers count can not be less than 0"]
     },
     followedBy: [{
         type: mongoose.Types.ObjectId,
@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema({
     followingCount: {
         type: Number,
         default: 0,
-        min: 0
+        min: [0, "Minimum following count can not be less than 0"]
     },
     followingTo: [{
         type: mongoose.Types.ObjectId,

@@ -14,6 +14,7 @@ router.put(
     auth,
     userService.follow
 );
+
 router.put(
     "/unfollow/:id",
     auth,
