@@ -4,66 +4,37 @@ const Comment = require("../models/schema/comment.schema")
 
 
 
-exports.postLiked = async (req, res) => {
-    const currentUser = await User.findById(req.user._id);
+exports.postLiked = async (currentUserId, postId) => {
+    const currentUser = await User.findById(currentUserId);
     if (!currentUser) {
         return new Error("current user not found");
     }
-    Post.findByIdAndUpdate(
-        req.params.id,
+    return await Post.findByIdAndUpdate(
+        postId,
         { $push: { likedBy: currentUser._id }, $inc: { likeCount: 1 } },
         { new: true, omitUndefined: true }
-    )
-        .then((post) =>
-            res.status(200).json({
-                status: "success",
-                data: post,
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: {
-                    data: e,
-                },
-            })
-        );
+    );
 };
 
 
-exports.postUnliked = async (req, res) => {
-    const currentUser = await User.findById(req.user._id);
+exports.postUnliked = async (currentUserId, postId) => {
+    const currentUser = await User.findById(currentUserId);
     if (!currentUser) {
         return new Error("current user not found");
     }
-    await Post.findByIdAndUpdate(
-        req.params.id,
+    return await Post.findByIdAndUpdate(
+        postId,
         { $pull: { likedBy: currentUser._id }, $inc: { likeCount: -1 } },
         { new: true, omitUndefined: true }
     )
-        .then((doc) =>
-            res.status(200).json({
-                status: "success",
-                data: "Post Unliked successfully!!!",
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: {
-                    data: e,
-                },
-            })
-        );
 };
 
-exports.addComment = async (req, res) => {
+exports.addComment = async (userId, postId, comment) => {
     try {
-        const currentUser = await User.findById(req.user._id);
+        const currentUser = await User.findById(userId);
         if (!currentUser) {
             return new Error("current user not found");
         }
-        const { comment } = req.body;
         const newComment = {
             text: comment,
             commentedBy: currentUser,
@@ -74,7 +45,7 @@ exports.addComment = async (req, res) => {
             return new Error("comment not created");
 
         await Post.findByIdAndUpdate(
-            req.params.id,
+            postId,
             {
                 $push: {
                     comments: createdComment
@@ -83,120 +54,52 @@ exports.addComment = async (req, res) => {
             { new: true, omitUndefined: true }
         ).populate("comments");
 
-        res.status(200).json({
-            status: "success",
-            data: {
-                commentID: createdComment._id,
-                comment: createdComment.text,
-                createdBy: createdComment.commentedBy._id,
-                createdAt: createdComment.commentedAt
-            },
-        })
+        return createdComment;
     }
     catch (err) {
-        res.status(500).send({
-            data: err
-        })
+        throw new Error("error in creating comment")
     }
-
 };
 
-exports.getAllPostOfAUser = async (req, res) => {
-    const currentUser = await User.findById(req.user._id);
+exports.getAllPostOfAUser = async (currentUserId) => {
+    const currentUser = await User.findById(currentUserId);
     if (!currentUser) {
         return new Error("current user not found");
     }
-    await Post.find({ postedBy: currentUser._id })
+    return Post.find({ postedBy: currentUser._id })
         .sort({ createdAt: -1 })
-        // populate("comments")
-        .then((doc) =>
-            res.status(200).json({
-                status: "success",
-                data: doc,
-            })
-        )
-        .catch((e) =>
-            res.status(500).json({
-                status: "Error",
-                data: {
-                    data: e,
-                },
-            })
-        );
+    // populate("comments")
 };
 
-exports.getPostById = async (req, res) => {
-    console.log("id: ", req.params.id)
-    const post = await Post.findById(req.params.id).populate("comments")
+exports.getPostById = async (postId) => {
+    const post = await Post.findById(postId).populate("comments")
     try {
-        const commentCount = post.comments.length;
-        res.status(200).send({
-            status: "success",
-            data: {
-                title: post.title,
-                likeCount: post.likeCount,
-                numberOfComment: commentCount
-            },
-        })
+        if (post)
+            return post;
     }
     catch (e) {
-        res.status(400).json({
-            status: "Error",
-            data: e,
-        })
+        throw new Error("post not found !!")
     }
 };
 
 
-exports.createPost = (req, res, next) => {
-    const { title, description } = req.body;
-    const newPost = {
-        title,
-        description,
-        postedBy: req.user
+exports.createPost = async (newPost) => {
+    const post = await new Post(newPost);
+    post.save();
+    if (!post) {
+        throw new Error("error in creating post")
     }
-    const post = new Post(newPost);
-    post
-        .save()
-        .then((post) =>
-            res.status(201).json({
-                status: "success",
-                data: {
-                    id: post._id,
-                    title: post.title,
-                    description: post.description,
-                    createdAt: post.createdAt,
-                },
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: e,
-            })
-        );
+    return post;
 };
 
 
-exports.deletePostById = (req, res) => {
-    const deletePost = Post.findOneAndDelete({
-        _id: req.params.id,
-        user: req.user._id,
+exports.deletePostById = async (postId, userId) => {
+    const deletePost = await Post.findOneAndDelete({
+        _id: postId,
+        user: userId,
     });
-
-    deletePost
-        .then((doc) =>
-            res.status(200).json({
-                status: "success",
-                data: "deleted!!",
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: {
-                    data: e,
-                },
-            })
-        );
+    if (!deletePost) {
+        throw new Error("error in deleting post")
+    }
+    return deletePost;
 };

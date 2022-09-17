@@ -2,18 +2,12 @@ const bcrypt = require('bcryptjs')
 const User = require('../models/schema/user.schema');
 const { sendWelcomeEmail, sendCancelationEmail } = require('../config/emails/email')
 
-exports.getUserById = (req, res) => {
-    User.findById(req.user._id)
-        .then(doc => res.status(200).json({
-            status: 'success',
-            data: {
-                age: doc.age,
-                name: doc.name,
-                numberOfFollowers: doc.followersCount,
-                numberOfFollowings: doc.followingCount
-            }
-        }))
-        .catch(err => res.status(404).json(err));
+exports.getUserById = async (userId) => {
+    const user = await User.findById(userId)
+    if (!user) {
+        return new Error("User not found !!")
+    }
+    return user;
 };
 
 
@@ -47,17 +41,13 @@ exports.getUserByEmailAndPassword = async (req, res) => {
     }
 }
 
-exports.follow = async (req, res) => {
-    if (req.params.id === req.user._id) {
-        res.status(400).send({
-            status: 'success',
-            data: 'You cannot follow yourself !!'
-        });
-        return;
+exports.follow = async (currentUserId, goingToFollowUserId) => {
+    if (goingToFollowUserId === currentUserId) {
+        throw new Error('You cannot follow yourself !!')
     }
     try {
-        const currentUser = await User.findById(req.user._id);
-        const goingToFollowUser = await User.findById(req.params.id)
+        const currentUser = await User.findById(currentUserId);
+        const goingToFollowUser = await User.findById(goingToFollowUserId)
         if (!currentUser || !goingToFollowUser) {
             throw new Error("User(s) not found");
         }
@@ -85,32 +75,19 @@ exports.follow = async (req, res) => {
                 new: true, omitUndefined: true
             }
         );
-        res.status(200).json({
-            data: {
-                name: updatedCurrentUser.name,
-                followersCount: updatedCurrentUser.followersCount,
-                followingCount: updatedCurrentUser.followingCount
-            }
-
-        })
+        return updatedCurrentUser;
     } catch (err) {
-        res.status(500).json({
-            data: err
-        })
+        return new Error("error in following user")
     }
 };
 
 
-exports.unfollow = async (req, res) => {
-    if (req.params.id == req.user._id) {
-        res.status(400).send({
-            status: 'success',
-            data: 'You cannot unfollow yourself !!'
-        });
-        return;
+exports.unfollow = async (currentUserId, goingToFollowUserId) => {
+    if (goingToFollowUserId == currentUserId) {
+        throw new Error('You cannot follow yourself !!')
     }
-    const currentUser = await User.findById(req.user._id);
-    const goingToUnFollowUser = await User.findById(req.params.id)
+    const currentUser = await User.findById(currentUserId);
+    const goingToUnFollowUser = await User.findById(goingToFollowUserId)
     if (!currentUser || !goingToUnFollowUser) {
         throw new Error("User(s) not found");
     }
@@ -130,18 +107,8 @@ exports.unfollow = async (req, res) => {
             },
             { new: true, omitUndefined: true })
 
-        res.status(200).json({
-            data: {
-                name: updatedCurrentUser.name,
-                followersCount: updatedCurrentUser.followersCount,
-                followingCount: updatedCurrentUser.followingCount
-            }
-
-        })
-
+        return updatedCurrentUser;
     } catch (err) {
-        res.
-            status(500).
-            send({ data: err })
+        return new Error("error in unfollowing user")
     }
 };
