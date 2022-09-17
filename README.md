@@ -11,25 +11,36 @@
 
   ### **API Endpoints**
   - GET: 
+
       => /api/users/
+
       => /api/users/authenticate
+      
       => /api/posts/
+      
       => /api/posts/:id
   
   - POST:
+
       => /api/posts/
   
   - PUT:
+
       => /api/posts/like/:id
+
       => /api/posts/unlike/:id
+      
       => /api/comment/:id
+      
       => /api/users/follow/:id
+      
       => /api/unfollow/:id
   
   - DELETE:
+
       => /api/posts/:id
 
   ### Steps to build and run this project at your setup
-  - git clone <this-project-repo-link>
+  - git clone <"project-link">
   - npm i
   - npm run dev
