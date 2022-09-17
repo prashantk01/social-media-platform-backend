@@ -20,7 +20,7 @@ exports.getUserByEmailAndPassword = async (req, res) => {
         const user = await User.findOne({
             email: email,
         })
-        sendWelcomeEmail(user.email, user.name)
+        // sendWelcomeEmail(user.email, user.name)
         if (!user || !await bcrypt.compare(password, user.password)) {
             res.status(404).json({
                 data: "User not found or Incorrect Password"

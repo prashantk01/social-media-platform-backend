@@ -12,33 +12,35 @@
   ### **API Endpoints**
   - GET: 
 
-      => /api/users/
+      - /api/user/
 
-      => /api/users/authenticate
+      - /api/user/authenticate
       
-      => /api/posts/
+      - /api/posts/
       
-      => /api/posts/:id
+      - /api/posts/:id
   
+      - /test
+
   - POST:
 
-      => /api/posts/
+      - /api/posts/
   
   - PUT:
 
-      => /api/posts/like/:id
+      - /api/posts/like/:id
 
-      => /api/posts/unlike/:id
+      - /api/posts/unlike/:id
       
-      => /api/comment/:id
+      - /api/comment/:id
       
-      => /api/users/follow/:id
+      - /api/user/follow/:id
       
-      => /api/unfollow/:id
+      - /api/unfollow/:id
   
   - DELETE:
 
-      => /api/posts/:id
+      - /api/posts/:id
 
   ### Steps to build and run this project at your setup
   - git clone <"project-link">
