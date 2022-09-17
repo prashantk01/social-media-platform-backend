@@ -3,11 +3,11 @@ const validator = require('validator')
 
 mongoose.Schema.Types.String.set("trim", true);
 const post = new mongoose.Schema({
-    postTitle: {
+    title: {
         type: String,
         required: true,
     },
-    postDescription: {
+    description: {
         type: String,
         required: true,
     },
@@ -26,20 +26,12 @@ const post = new mongoose.Schema({
             ref: "User"
         }
     ],
-    comments: [{
-        commentText: {
-            type: String
-        },
-        commentedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
-        },
-        commentedAt: {
-            type: Date,
-            default: Date.now()
+    comments: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: "Comment"
         }
-
-    }],
+    ],
 })
 
 

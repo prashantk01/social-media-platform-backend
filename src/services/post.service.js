@@ -1,16 +1,23 @@
 const Post = require("../models/schema/post.schema");
+const User = require("../models/schema/user.schema")
+const Comment = require("../models/schema/comment.schema")
 
-exports.postLiked = (req, res) => {
+
+
+exports.postLiked = async (req, res) => {
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+        return new Error("current user not found");
+    }
     Post.findByIdAndUpdate(
         req.params.id,
-        { $push: { likedBy: req.user._id }, $inc: { likeCount: 1 } },
+        { $push: { likedBy: currentUser._id }, $inc: { likeCount: 1 } },
         { new: true, omitUndefined: true }
     )
-        .populate("postedBy", "_id name")
-        .then((doc) =>
+        .then((post) =>
             res.status(200).json({
                 status: "success",
-                data: doc,
+                data: post,
             })
         )
         .catch((e) =>
@@ -24,13 +31,16 @@ exports.postLiked = (req, res) => {
 };
 
 
-exports.postUnliked = (req, res) => {
-    Post.findByIdAndUpdate(
+exports.postUnliked = async (req, res) => {
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+        return new Error("current user not found");
+    }
+    await Post.findByIdAndUpdate(
         req.params.id,
-        { $pull: { likedBy: req.user._id }, $inc: { likeCount: -1 } },
+        { $pull: { likedBy: currentUser._id }, $inc: { likeCount: -1 } },
         { new: true, omitUndefined: true }
     )
-        .populate("user", "_id name")
         .then((doc) =>
             res.status(200).json({
                 status: "success",
@@ -47,44 +57,62 @@ exports.postUnliked = (req, res) => {
         );
 };
 
-exports.addComment = (req, res) => {
-    Post.findByIdAndUpdate(
-        req.params.id,
-        {
-            $push: {
-                comments: { commentText: req.body.comment, commentedBy: req.user._id, commentedAt: new Date() },
+exports.addComment = async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.user._id);
+        if (!currentUser) {
+            return new Error("current user not found");
+        }
+        const { comment } = req.body;
+        const newComment = {
+            text: comment,
+            commentedBy: currentUser,
+            createdAt: new Date()
+        }
+        const createdComment = await new Comment(newComment).save();
+        if (!createdComment)
+            return new Error("comment not created");
+
+        await Post.findByIdAndUpdate(
+            req.params.id,
+            {
+                $push: {
+                    comments: createdComment
+                },
             },
-        },
-        { new: true, omitUndefined: true }
-    )
-        .populate("postedBy", "_id name")
-        .then((doc) =>
-            res.status(200).json({
-                status: "success",
-                data: {
-                    data: doc,
-                },
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: {
-                    data: e,
-                },
-            })
-        );
+            { new: true, omitUndefined: true }
+        ).populate("comments");
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                commentID: createdComment._id,
+                comment: createdComment.text,
+                createdBy: createdComment.commentedBy._id,
+                createdAt: createdComment.commentedAt
+            },
+        })
+    }
+    catch (err) {
+        res.status(500).send({
+            data: err
+        })
+    }
+
 };
 
-exports.getAllPostOfAUser = (req, res) => {
-    Post.find({ user: req.user._id })
+exports.getAllPostOfAUser = async (req, res) => {
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+        return new Error("current user not found");
+    }
+    await Post.find({ postedBy: currentUser._id })
         .sort({ createdAt: -1 })
+        // populate("comments")
         .then((doc) =>
             res.status(200).json({
                 status: "success",
-                data: {
-                    data: doc,
-                },
+                data: doc,
             })
         )
         .catch((e) =>
@@ -97,38 +125,47 @@ exports.getAllPostOfAUser = (req, res) => {
         );
 };
 
-exports.getPostById = (req, res) => {
-    Post.findById(req.params.id)
-        .then((doc) =>
-            res.status(200).json({
-                status: "success",
-                data: {
-                    data: doc,
-                },
-            })
-        )
-        .catch((e) =>
-            res.status(400).json({
-                status: "Error",
-                data: e,
-            })
-        );
+exports.getPostById = async (req, res) => {
+    console.log("id: ", req.params.id)
+    const post = await Post.findById(req.params.id).populate("comments")
+    try {
+        const commentCount = post.comments.length;
+        res.status(200).send({
+            status: "success",
+            data: {
+                title: post.title,
+                likeCount: post.likeCount,
+                numberOfComment: commentCount
+            },
+        })
+    }
+    catch (e) {
+        res.status(400).json({
+            status: "Error",
+            data: e,
+        })
+    }
 };
 
 
 exports.createPost = (req, res, next) => {
-    const post = new Post(req.body);
-    post.postedBy = req.user;
+    const { title, description } = req.body;
+    const newPost = {
+        title,
+        description,
+        postedBy: req.user
+    }
+    const post = new Post(newPost);
     post
         .save()
-        .then((doc) =>
+        .then((post) =>
             res.status(201).json({
                 status: "success",
                 data: {
-                    id: doc._id,
-                    title: doc.postTitle,
-                    description: doc.postDescription,
-                    createdAt: doc.createdAt,
+                    id: post._id,
+                    title: post.title,
+                    description: post.description,
+                    createdAt: post.createdAt,
                 },
             })
         )
