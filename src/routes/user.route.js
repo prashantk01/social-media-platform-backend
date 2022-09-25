@@ -25,6 +25,29 @@ router.get("/",
     }
 );
 
+router.post("/",
+    async (req, res) => {
+        try {
+            const { name, email, password } = req.body;
+            const user = {
+                name,
+                email,
+                password
+            }
+            const response = await userService.createUser(user);
+            res.status(200).send({
+                data: {
+                    name: response.name,
+                    email: response.email,
+                },
+            })
+        } catch (err) {
+            console.log(err)
+            res.status(400).send(err);
+        }
+    }
+);
+
 router.put(
     "/follow/:id",
     auth,

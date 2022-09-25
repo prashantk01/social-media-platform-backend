@@ -10,6 +10,23 @@ exports.getUserById = async (userId) => {
     return user;
 };
 
+exports.createUser = async (usr) => {
+    const hashedPassword = await bcrypt.hash(usr.password, 10);
+    const user = {
+        name: usr.name,
+        email: usr.email,
+        password: hashedPassword
+    }
+    const fetchedUser = await new User(user);
+    // fetchedUser.save();
+    const token = await fetchedUser.generateAuthToken()
+    if (!fetchedUser) {
+        throw new Error("error in creating user")
+    }
+    return fetchedUser;
+};
+
+
 
 exports.getUserByEmailAndPassword = async (req, res) => {
     try {
@@ -27,10 +44,10 @@ exports.getUserByEmailAndPassword = async (req, res) => {
             })
         }
         else {
-            const token = await user.generateAuthToken()
+            // const token = await user.generateAuthToken()
             res.status(200).json({
                 data: {
-                    token: token
+                    token: user.tokens[0]
                 },
                 status: "Success",
             });
